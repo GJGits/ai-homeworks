@@ -1,0 +1,2 @@
+#!/bin/bash
+jupyter nbconvert --to pdf --template hidecode report-homework-1.ipynb
