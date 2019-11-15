@@ -121,14 +121,48 @@ def do_svm(kernel_type, C, X_train, y_train, X_validate, y_validate, g="auto", p
     best_svm_clf = None
     svm_sc_count = 0
     for c in C:
-        model = svm.SVC(C=c, kernel=kernel_type, gamma=g)
+        if isinstance(g, str):
+            model = svm.SVC(C=c, kernel=kernel_type, gamma=g)
+        else:
+            model = svm.SVC(C=c, kernel=kernel_type, gamma=g[0])
         svm_clf = model.fit(X_train, y_train)
         score = get_score(svm_clf, X_validate, y_validate)
         svm_scores[svm_sc_count] = score
         svm_sc_count += 1
-        print("score: %2f, C: %2f" %(score, c))
+        if isinstance(g, float):
+            print("score: %2f, C: %2f, g: %2f" %(score, c, g))
+        if isinstance(g, str):
+            print("score: %2f, C: %2f, g: %s" %(score, c, g))
         if score > svm_max_score:
             svm_max_score = score
             best_svm_clf = svm_clf
     return best_svm_clf, svm_scores
-    
+
+def do_svm_grid(kernel_type, C, X_train, y_train, X_validate, y_validate, gs, plot=False):
+    svm_max_score = 0
+    best_svm_clf = None
+    svm_sc_count = 0
+    for c in C:
+        for g in gs:
+            model = svm.SVC(C=c, kernel=kernel_type, gamma=g)
+            svm_clf = model.fit(X_train, y_train)
+            score = get_score(svm_clf, X_validate, y_validate)
+            svm_sc_count += 1
+            print("score: %2f, C: %2f, g: %2f" %(score, c, g))
+            if score > svm_max_score:
+                svm_max_score = score
+                best_svm_clf = svm_clf
+    return best_svm_clf    
+
+def do_svm_fold(X_train, y_train):
+    tuned_parameters = [
+        {'kernel': ['rbf'], 'gamma': [1e-3, 1e-4], 'C': [0.001, 0.01, 0.1, 1, 10, 100,1000]},
+        {'kernel': ['linear'], 'C': [0.001, 0.01, 0.1, 1, 10, 100,1000]}
+        ] 
+    clf = GridSearchCV(SVC(), tuned_parameters, cv=5)
+    clf.fit(X_train, y_train)
+    print("Best parameters set found on development set:")
+    print()
+    print(clf.best_params_)
+    return clf
+

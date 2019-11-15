@@ -38,18 +38,17 @@ print("Accuracy on test: % 2f, C: % 2f" %(test_accuray, best_rbf_svm.C) )
 
 #-------------------------------------- <MANUAL-TUNING>-------------------------------------#
 
+print("\n### RBF ANALYSIS POINT 15 ###\n------------------------------------------")
+
 gamma=[1e-3, 1e-4]
-C=[0.001, 0.01, 0.1, 1, 10, 100,1000]
-max_score=0
-max_svm=None
+best_rbf_svm= libs.do_svm_grid("rbf", C, X_train, y_train, X_validate, y_validate, gamma)
+test_accuray = libs.get_score(best_rbf_svm, X_test, y_test)
+print("------------------------------------------")
+print("Accuracy on test: % 2f, C: % 2f, g: %2f" %(test_accuray, best_rbf_svm.C, best_rbf_svm.gamma ) )
 
-for c in C:
-    for g in gamma:
-        model = svm.SVC(C=c, kernel="rbf", gamma=g)
-        svm_clf = model.fit(X_train, y_train)
-        score = svm_clf.score(X_validate, y_validate)
-        if score > max_score:
-            max_score = score
-            max_svm=svm_clf
+#-------------------------------------- <K-FOLD>-------------------------------------#
 
-do_svm_params("rbf", max_svm.C, max_svm.gamma)
+print("\n### SVM ANALYSIS K-FOLD ###\n------------------------------------------")
+best_fold_svm = libs.do_svm_fold(X_train, y_train)
+
+
