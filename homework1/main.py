@@ -49,9 +49,9 @@ print("Accuracy on test: % 2f, C: % 2f, g: %2f" %(test_accuray, best_rbf_svm.C, 
 #-------------------------------------- <K-FOLD>-------------------------------------#
 
 print("\n### SVM ANALYSIS K-FOLD ###\n------------------------------------------")
-best_fold_svm = libs.get_svm_fold(X_train, y_train)
 np.concatenate((X_train, X_validate))
 np.concatenate((y_train, y_validate))
+best_fold_svm = libs.get_svm_fold(X_train, y_train)
 test_accuray = libs.get_score(best_fold_svm, X_test, y_test)
 print("------------------------------------------")
 print("Accuracy on test: % 2f" %(test_accuray))

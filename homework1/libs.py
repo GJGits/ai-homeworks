@@ -11,6 +11,8 @@ from sklearn import svm
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.svm import SVC
+import pandas as pd
+import seaborn as sns
 
 def prepare_data():
     X, y = load_wine(return_X_y=True) # X contains values for attributes, y contains class labels
@@ -151,30 +153,58 @@ def do_svm(kernel_type, C, X_train, y_train, X_validate, y_validate, g="auto", p
             plt.show()
     return best_svm_clf, svm_scores
 
+def plot_svm_grid(cs,gs,scores):
+    df = pd.DataFrame({"param_C": cs, "param_gamma":gs, "scores":scores})
+    pvt = pd.pivot_table(df, values='scores', index='param_C', columns='param_gamma')
+    ax = sns.heatmap(pvt,annot = True)
+    plt.title("Heatmap for hardcoded grid search")
+    plt.show()
+
 def do_svm_grid(kernel_type, C, X_train, y_train, X_validate, y_validate, gs, plot=False):
     svm_max_score = 0
     best_svm_clf = None
     svm_sc_count = 0
+    cs = {}
+    gammas = {}
+    pvt_scores = {}
+    count = 0
     for c in C:
         for g in gs:
+            cs[count] = c
+            gammas[count] = g
             model = svm.SVC(C=c, kernel=kernel_type, gamma=g)
             svm_clf = model.fit(X_train, y_train)
             score = get_score(svm_clf, X_validate, y_validate)
+            pvt_scores[count] = score
+            count = count + 1
             svm_sc_count += 1
-            print("score: %2f, C: %2f, g: %2f" %(score, c, g))
+            if plot is False:
+                print("score: %2f, C: %2f, g: %2f" %(score, c, g))
             if score > svm_max_score:
                 svm_max_score = score
                 best_svm_clf = svm_clf
-    return best_svm_clf    
+    if plot is True:
+        plot_svm_grid(cs,gammas,pvt_scores)
+    return best_svm_clf 
 
-def get_svm_fold(X_train, y_train):
+def plotKfold(clf, C, gamma):
+    pvt = pd.pivot_table(pd.DataFrame(clf.cv_results_), values='mean_test_score', index='param_C', columns='param_gamma')
+    ax = sns.heatmap(pvt,annot = True)
+    plt.title("Heatmap for Grid search with 5-fold validation")
+    plt.show()
+ 
+
+def get_svm_fold(X_train, y_train, plot=False):
     tuned_parameters = [
         {'kernel': ['rbf'], 'gamma': [1e-5, 1e-4, 1e-3, 1e-1, 10, 1000], 'C': [0.001, 0.01, 0.1, 1, 10, 100,1000]},
         {'kernel': ['linear'], 'C': [0.001, 0.01, 0.1, 1, 10, 100,1000]}
         ] 
     model = GridSearchCV(SVC(), tuned_parameters, cv=5, iid=False)
     clf = model.fit(X_train, y_train)
-    print("Best parameters set found on development set: ", clf.best_params_)
+    if plot is False:
+        print("Best parameters set found on development set: ", clf.best_params_)
+    if plot is True:
+        plotKfold(clf, [0.001, 0.01, 0.1, 1, 10, 100,1000], [0.001, 0.01, 0.1, 1, 10, 100,1000])
     return clf
 
 
