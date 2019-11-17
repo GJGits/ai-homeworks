@@ -79,20 +79,22 @@ def plot_knn(X,y,neigh):
     plt.figure()
     plt.pcolormesh(xx, yy, Z, cmap=cmap_light)
     # Plot also the training points
-    plt.subplot(222)
     plt.scatter(X[:, 0], X[:, 1], c=y, cmap=cmap_bold)
     plt.xlim(xx.min(), xx.max())
     plt.ylim(yy.min(), yy.max())
     plt.title("3-Class classification (k = %i)" % (neigh.n_neighbors))
-
-def plot_knn_scores(scores):
-    objects = ('k=1', 'k=3', 'k=5', 'k=7')
-    y_pos = np.arange(len(objects))
-    plt.bar(y_pos, scores, align='center', alpha=0.5)
-    plt.xticks(y_pos, objects)
-    plt.ylabel('Accuracy')
-    plt.title('Accuracy vs Kn')
     plt.show()
+
+def plot_scores(objs, scores, title, color):
+    y_pos = np.arange(len(objs))
+    plt.xticks(y_pos, objs)
+    plt.ylabel('Accuracy')
+    plt.title(title)
+    i = 0
+    for score in scores:
+        plt.text(i, score, "{0:.2f}".format(score))
+        i = i + 1
+    return plt.bar(y_pos, scores, align='center', alpha=0.5, color=color)
 
 def do_knn(kn_values, X_train, y_train, X_validate, y_validate, plot=False):
     sc_count = 0
@@ -111,8 +113,6 @@ def do_knn(kn_values, X_train, y_train, X_validate, y_validate, plot=False):
             plot_knn(X_train, y_train, clf)
         else:
             print("score: %2f, k: %2d" %(score, kn))
-    if plot is True:
-        plt.show()
     return best_clf, scores
 
 def do_svm(kernel_type, C, X_train, y_train, X_validate, y_validate, g="auto", plot=False):
@@ -129,13 +129,26 @@ def do_svm(kernel_type, C, X_train, y_train, X_validate, y_validate, g="auto", p
         score = get_score(svm_clf, X_validate, y_validate)
         svm_scores[svm_sc_count] = score
         svm_sc_count += 1
-        if isinstance(g, float):
+        if isinstance(g, float) and plot is False:
             print("score: %2f, C: %2f, g: %2f" %(score, c, g))
-        if isinstance(g, str):
+        if isinstance(g, str) and plot is False:
             print("score: %2f, C: %2f, g: %s" %(score, c, g))
         if score > svm_max_score:
             svm_max_score = score
             best_svm_clf = svm_clf
+        if plot is True:
+            fig, ax = plt.subplots()
+            # title for the plots
+            title = ('SVC data and boundaries for C= %2f ' %(c))
+            # Set-up grid for plotting.
+            X0, X1 = X_train[:, 0], X_train[:, 1]
+            xx, yy = make_meshgrid(X0, X1)
+            plot_contours(ax, svm_clf, xx, yy, cmap=plt.cm.coolwarm, alpha=0.8)
+            ax.scatter(X0, X1, c=y_train, cmap=plt.cm.coolwarm, s=20, edgecolors='k')
+            ax.set_xticks(())
+            ax.set_yticks(())
+            ax.set_title(title)
+            plt.show()
     return best_svm_clf, svm_scores
 
 def do_svm_grid(kernel_type, C, X_train, y_train, X_validate, y_validate, gs, plot=False):
@@ -154,15 +167,14 @@ def do_svm_grid(kernel_type, C, X_train, y_train, X_validate, y_validate, gs, pl
                 best_svm_clf = svm_clf
     return best_svm_clf    
 
-def do_svm_fold(X_train, y_train):
+def get_svm_fold(X_train, y_train):
     tuned_parameters = [
-        {'kernel': ['rbf'], 'gamma': [1e-3, 1e-4], 'C': [0.001, 0.01, 0.1, 1, 10, 100,1000]},
+        {'kernel': ['rbf'], 'gamma': [1e-5, 1e-4, 1e-3, 1e-1, 10, 1000], 'C': [0.001, 0.01, 0.1, 1, 10, 100,1000]},
         {'kernel': ['linear'], 'C': [0.001, 0.01, 0.1, 1, 10, 100,1000]}
         ] 
-    clf = GridSearchCV(SVC(), tuned_parameters, cv=5)
-    clf.fit(X_train, y_train)
-    print("Best parameters set found on development set:")
-    print()
-    print(clf.best_params_)
+    model = GridSearchCV(SVC(), tuned_parameters, cv=5, iid=False)
+    clf = model.fit(X_train, y_train)
+    print("Best parameters set found on development set: ", clf.best_params_)
     return clf
+
 
